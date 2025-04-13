@@ -1,5 +1,6 @@
 package com.hmdp.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.hmdp.dto.Result;
@@ -17,31 +18,23 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-/**
- * <p>
- *  服务实现类
- * </p>
- *
- * @author 虎哥
- * @since 2021-12-22
- */
 @Service
 public class ShopTypeServiceImpl extends ServiceImpl<ShopTypeMapper, ShopType> implements IShopTypeService {
 
     @Resource
     private StringRedisTemplate stringRedisTemplate;
 
-    public Result queryTypyList(){
+    public Result queryTypeList(){
         String cacheCode = "cache:shopType:list:";
         String JSON = stringRedisTemplate.opsForValue().get(cacheCode);
 
-        if (StringUtils.isNotBlank(JSON)) {
+        if (StrUtil.isNotBlank(JSON)) {
             //命中缓存，反序列化后返回
             List<ShopType> typeList = JSONUtil.toList(JSON, ShopType.class);
             return Result.ok(typeList);
         }
         //判断是否命中空值
-        if (JSON == null) {
+        if (JSON != null) {
             return Result.ok(Collections.emptyList());
         }
 

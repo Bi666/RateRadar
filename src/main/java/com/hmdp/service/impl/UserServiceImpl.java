@@ -11,8 +11,10 @@ import com.hmdp.dto.UserDTO;
 import com.hmdp.entity.User;
 import com.hmdp.mapper.UserMapper;
 import com.hmdp.service.IUserService;
+import com.hmdp.utils.RedisConstants;
 import com.hmdp.utils.RegexUtils;
 import com.hmdp.utils.SystemConstants;
+import com.hmdp.utils.UserHolder;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.BeanUtils;
@@ -97,5 +99,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         stringRedisTemplate.expire(tokenKey, LOGIN_USER_TTL, TimeUnit.MINUTES);
         //返回token
         return Result.ok(token);
+    }
+
+    public Result logout(String token) {
+        // 构建 Redis 中存储 token 的 key
+        String tokenKey = RedisConstants.LOGIN_USER_KEY + token;
+        // 删除 Redis 中的 token
+        Boolean deleted = stringRedisTemplate.delete(tokenKey);
+        if (Boolean.TRUE.equals(deleted)) {
+            // 清除当前线程中的用户信息
+            UserHolder.removeUser();
+            return Result.ok("注销成功");
+        }
+        return Result.fail("注销失败，请重试");
     }
 }
