@@ -7,17 +7,25 @@ import com.hmdp.mapper.VoucherMapper;
 import com.hmdp.entity.SeckillVoucher;
 import com.hmdp.service.ISeckillVoucherService;
 import com.hmdp.service.IVoucherService;
+import com.hmdp.utils.RedisConstants;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
+import java.time.ZoneOffset;
 import java.util.List;
 
 @Service
 public class VoucherServiceImpl extends ServiceImpl<VoucherMapper, Voucher> implements IVoucherService {
 
-    @Resource
+    @Autowired
     private ISeckillVoucherService seckillVoucherService;
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
+
 
     @Override
     public Result queryVoucherOfShop(Long shopId) {
@@ -39,5 +47,12 @@ public class VoucherServiceImpl extends ServiceImpl<VoucherMapper, Voucher> impl
         seckillVoucher.setBeginTime(voucher.getBeginTime());
         seckillVoucher.setEndTime(voucher.getEndTime());
         seckillVoucherService.save(seckillVoucher);
-    }
+        // 保存秒杀库存到redis中
+        stringRedisTemplate.opsForValue().set(RedisConstants.SECKILL_STOCK_KEY + voucher.getId(), String.valueOf(voucher.getStock()));
+        // 保存秒杀开始时间到redis中
+        long beginTime = voucher.getBeginTime().toEpochSecond(ZoneOffset.UTC) * 1000; // 转换为毫秒时间戳
+        stringRedisTemplate.opsForValue().set("seckill:begin:" + voucher.getId(), String.valueOf(beginTime));
+        // 保存秒杀结束时间到redis中
+        long endTime = voucher.getEndTime().toEpochSecond(ZoneOffset.UTC) * 1000; // 转换为毫秒时间戳
+        stringRedisTemplate.opsForValue().set("seckill:end:" + voucher.getId(), String.valueOf(endTime));}
 }

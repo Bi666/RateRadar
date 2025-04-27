@@ -11,33 +11,45 @@ local voucherId = ARGV[1]
 local userId = ARGV[2]
 --1.3 当前时间(毫秒时间戳)
 local currentTime = tonumber(ARGV[3])
---1.4 开始时间(毫秒时间戳)
-local beginTime = tonumber(ARGV[4])
---1.5 结束时间(毫秒时间戳)
-local endTime = tonumber(ARGV[5])
 
 --2.数据key
---2.1 库存key
+--2.1 开始时间key
+local beginTimeKey = 'seckill:begin:' ..voucherId
+--2.2 结束时间key
+local endTimeKey = 'seckill:end:' ..voucherId
+--2.3 库存key
 local stockKey = 'seckill:stock:' ..voucherId
---2.2 订单key
+--2.4 订单key
 local orderKey = "seckill:order:" ..voucherId
 
 --3.脚本业务
 --3.1 判断秒杀时间是否开始
-if (currentTime < beginTime) then
-    --秒杀尚未开始，返回3
-    return 3
+local beginTimeStr = redis.call('get', beginTimeKey)
+if (beginTimeStr) then
+    local beginTime = tonumber(beginTimeStr)
+    if (beginTime and currentTime < beginTime) then
+        --秒杀尚未开始，返回3
+        return 3
+    end
 end
 
 --3.2 判断秒杀时间是否结束
-if (currentTime > endTime) then
-    --秒杀已经结束，返回4
-    return 4
+local endTimeStr = redis.call('get', endTimeKey)
+if (endTimeStr) then
+    local endTime = tonumber(endTimeStr)
+    if (endTime and currentTime > endTime) then
+        --秒杀已经结束，返回4
+        return 4
+    end
 end
 
 --3.3 判断库存是否充足
 local stockStr = redis.call('get', stockKey)
-if (stockStr == nil or tonumber(stockStr) <= 0) then
+local stock = 0
+if (stockStr) then
+    stock = tonumber(stockStr)
+end
+if (stock <= 0) then
     --库存不足，返回1
     return 1
 end
