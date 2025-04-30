@@ -9,8 +9,11 @@
 local voucherId = ARGV[1]
 --1.2 用户id
 local userId = ARGV[2]
+-- 订单id
+local orderId = ARGV[3]
+
 --1.3 当前时间(毫秒时间戳)
-local currentTime = tonumber(ARGV[3])
+local currentTime = tonumber(ARGV[4])
 
 --2.数据key
 --2.1 开始时间key
@@ -64,5 +67,7 @@ end
 redis.call('incrby', stockKey, -1)
 --3.6 下单（保存用户）sadd orderKey userId
 redis.call('sadd', orderKey, userId)
---3.7 下单成功，返回0
+
+--3.7 发送消息到队列中，XADD stream.orders * k1 v1 k2 v2 ...
+redis.call('xadd', 'stream.orders', '*', 'userId', userId, 'voucherId', voucherId, 'id', orderId)
 return 0
